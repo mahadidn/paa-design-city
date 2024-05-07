@@ -58,7 +58,7 @@ for i in range(10):
     house_positions.append((start_row_house, start_col_house))
 
     # atur untuk 4 medium building
-    if i <= 4:
+    if i < 4:
         startRow_mediumBuilding = random.randint(0, grid_size - 3) * cell_size
         startCol_mediumBuilding = random.randint(0, grid_size - 5) * cell_size
         medium_buildingPosition.append((startRow_mediumBuilding, startCol_mediumBuilding))
@@ -90,7 +90,7 @@ for start_row_house, start_col_house in house_positions:
     grid[small_buildingPosition[i][0]:small_buildingPosition[i][0] + 2 * cell_size, small_buildingPosition[i][1]:small_buildingPosition[i][1] + 2 * cell_size] = smallBuilding_resized
     
     # tempatkan lokasi 4 medium building
-    if i <= 4:
+    if i < 4:
         grid[medium_buildingPosition[i][0]:medium_buildingPosition[i][0] + 3 * cell_size, medium_buildingPosition[i][1]:medium_buildingPosition[i][1] + 5 * cell_size] = medium_buildingResized
     
     # tempatkan road didalam grid
