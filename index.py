@@ -2,108 +2,200 @@ import numpy as np
 import cv2
 import random
 
-# Inisialisasi ukuran grid
-grid_size = 150
-cell_size = 5  # Ukuran setiap sel (misalnya, 5 pixel)
+def draw_grid():
+    # Inisialisasi ukuran grid
+    grid_size = 150
+    cell_size = 6  # 6 pixel
+
+    # ukuran jendela tampilan agar 900 x 900 (agar pas 6 pixel, 150 x 150)
+    window_size = grid_size * cell_size
+
+    # Inisialisasi grid dengan warna hijau gelap (0, 100, 0)
+    grid_color = (0, 100, 0)
+    grid = np.ones((window_size, window_size, 3), dtype=np.uint8) * np.array(grid_color, dtype=np.uint8)
+
+    # Gambar garis vertikal
+    for i in range(1, grid_size):
+        cv2.line(grid, (i * cell_size, 0), (i * cell_size, window_size), (0, 0, 0), 1)
+
+    # Gambar garis horizontal
+    for j in range(1, grid_size):
+        cv2.line(grid, (0, j * cell_size), (window_size, j * cell_size), (0, 0, 0), 1)
+
+    return grid
+
+# acak posisi jalan
+def create_roads():
+    road_positions = {'horizontal': [], 'vertical': []}
+    
+    # Lebar jalan
+    road_width = 4 * cell_size
+
+    # Membuat random jalan horizontal
+    for i in range(random.randint(2, 5)):
+        start_row = random.randint(0, grid_size - 1) * cell_size
+        while any(abs(start_row - row) < 10 * cell_size for row, i in road_positions['horizontal']):
+            start_row = random.randint(0, grid_size - 1) * cell_size
+        road_positions['horizontal'].append((start_row, 'straight'))
+
+    # Membuat random jalan vertikal
+    for i in range(random.randint(2, 4)):
+        start_col = random.randint(0, grid_size - 1) * cell_size
+        while any(abs(start_col - col) < 15 * cell_size for col, i in road_positions['vertical']):
+            start_col = random.randint(0, grid_size - 1) * cell_size
+        road_positions['vertical'].append((start_col, 'straight'))
+
+    # Tambahkan jalan berbelok
+    turn_direction = random.choice(['horizontal', 'vertical'])
+    if turn_direction == 'horizontal':
+        # Pilih salah satu jalan horizontal untuk berbelok
+        index = random.randint(0, len(road_positions['horizontal']) - 1)
+        turn_row = road_positions['horizontal'][index][0]
+        turn_point = random.randint(20, grid_size - 20) * cell_size  # Titik belok di tengah-tengah
+        road_positions['horizontal'][index] = (turn_row, 'turn', turn_point)
+        # Pastikan jarak cukup dari jalan vertikal
+        while any(abs(turn_point - col) < 15 * cell_size for col, i in road_positions['vertical']):
+            turn_point = random.randint(20, grid_size - 20) * cell_size
+        road_positions['horizontal'][index] = (turn_row, 'turn', turn_point)
+    else:
+        # Pilih salah satu jalan vertikal untuk berbelok
+        index = random.randint(0, len(road_positions['vertical']) - 1)
+        turn_col = road_positions['vertical'][index][0]
+        turn_point = random.randint(20, grid_size - 20) * cell_size  # Titik belok di tengah-tengah
+        road_positions['vertical'][index] = (turn_col, 'turn', turn_point)
+        # Pastikan jarak cukup dari jalan horizontal
+        while any(abs(turn_point - row) < 10 * cell_size for row, i in road_positions['horizontal']):
+            turn_point = random.randint(20, grid_size - 20) * cell_size
+        road_positions['vertical'][index] = (turn_col, 'turn', turn_point)
+
+    return road_positions, road_width
+
+# gambar jalan di grid
+def draw_roads(grid, road_positions, cell_size, road_width, right_way = True):
+    road_color = (128, 128, 128)
+
+    iterator = 0
+    # Gambar jalan horizontal
+    for road in road_positions['horizontal']:
+        # print(road)
+        if road[1] == 'turn':
+            turn_row, i, turn_point = road
+            for col in range(0, turn_point, cell_size):
+                grid[turn_row:turn_row + road_width, col:col + cell_size] = road_color
+            # Gambar bagian yang berbelok
+            for offset in range(road_width):
+                grid[turn_row + offset:turn_row + road_width, turn_point:turn_point + road_width - offset] = road_color
+            for row in range(turn_row, grid_size * cell_size, cell_size):
+                grid[row:row + cell_size, turn_point:turn_point + road_width] = road_color
+        else:
+            # print(right_way)
+            row, i = road
+            if road_positions['vertical'][0][1] != 'turn' and road_positions['horizontal'][0][1] != 'turn' and right_way:
+                # print(road_positions['vertical'][0][1])
+                width = road_positions['vertical'][0][0]
+                # print(width)
+            else:
+                right_way = False
+                # print("ini di print")
+                # print(road_positions['vertical'][1][1])
+                
+                width = road_positions['vertical'][0][0]
+            
+            for col in range(0, grid_size * cell_size, cell_size):
+                if iterator <= width and right_way:
+                    grid[row:row + road_width, width:width + cell_size] = road_color
+                else:
+                    grid[row:row + road_width, col:col + cell_size] = road_color
+                # print(col)
+                iterator += 6
+
+    # Gambar jalan vertikal
+    iterator = 0
+    # w = 1
+    for road in road_positions['vertical']:
+        if road[1] == 'turn':
+            turn_col, i, turn_point = road
+            for row in range(0, turn_point, cell_size):
+                grid[row:row + cell_size, turn_col:turn_col + road_width] = road_color
+            # Gambar bagian yang berbelok
+            for offset in range(road_width):
+                grid[turn_point:turn_point + road_width - offset, turn_col + offset:turn_col + road_width] = road_color
+            for col in range(turn_col, grid_size * cell_size, cell_size):
+                grid[turn_point:turn_point + road_width, col:col + cell_size] = road_color
+        else:
+            col, i = road
+            if road_positions['horizontal'][0][1] != 'turn' and road_positions['vertical'][0][1] != 'turn':
+                # print(road_positions['horizontal'][0][1])
+                width = road_positions['horizontal'][0][0]
+            else:
+                width = road_positions['horizontal'][1][0]
+            for row in range(0, grid_size * cell_size, cell_size):
+                if iterator < width:
+                    grid[width:width + cell_size, col:col + road_width] = road_color
+                    right_way = False
+                else:
+                    grid[row:row + cell_size, col:col + road_width] = road_color
+                # print(col)
+                iterator += 6
+                # w += 1
+
+# acak posisi jalan dan menggambar ulang grid
+def randomize_and_redraw():
+
+    # panggil fungsi untuk acak jalan
+    road_positions, road_width = create_roads()
+
+    # Bersihkan grid
+    grid_color = (0, 100, 0)
+    grid = np.ones((window_size, window_size, 3), dtype=np.uint8) * np.array(grid_color, dtype=np.uint8)
+
+    # Menggambar grid
+    grid = draw_grid()
+
+    # Menggambar jalan di grid
+    draw_roads(grid, road_positions, cell_size, road_width)
+    
+    for i in range(1, grid_size):
+        cv2.line(grid, (i * cell_size, 0), (i * cell_size, window_size), (0, 0, 0), 1)
+
+    # Gambar garis horizontal
+    for j in range(1, grid_size):
+        cv2.line(grid, (0, j * cell_size), (window_size, j * cell_size), (0, 0, 0), 1)
+
+    # Tampilkan grid yang telah diacak
+    cv2.imshow("IKN Map", grid)
 
 # Inisialisasi ukuran jendela tampilan
-window_size = grid_size * cell_size
+window_size = 900  
 
-# Inisialisasi grid dengan warna putih (255)
-grid = np.ones((window_size, window_size, 3), dtype=np.uint8) * 255
+# jendela tampilan
+cv2.namedWindow("IKN Map")
 
-# Gambar garis vertikal
-for i in range(1, grid_size):
-    cv2.line(grid, (i * cell_size, 0), (i * cell_size, window_size), (0, 0, 0), 1)
+# Inisialisasi ukuran grid
+grid_size = 150
+cell_size = 6  # Ukuran setiap sel (misalnya, 6 pixel)
 
-# Gambar garis horizontal
-for j in range(1, grid_size):
-    cv2.line(grid, (0, j * cell_size), (window_size, j * cell_size), (0, 0, 0), 1)
+# Menggambar grid awal
+grid = draw_grid()
 
+# Atur posisi jalan (acak posisi dipanggil dan sekalian cek collision tiap jalan)
+road_positions, road_width = create_roads()
 
-# take images===
-# big building
-bigBuilding_img = cv2.imread('images/big-building.png')
-bigBuilding_imgResized = cv2.resize(bigBuilding_img, (10 * cell_size, 5 * cell_size))  # Resize sesuai ukuran grid
-# house
-house_img = cv2.imread('images/house.png')
-house_imgResized = cv2.resize(house_img, (1 * cell_size, 2 * cell_size))
-# medium building
-medium_building = cv2.imread('images/medium-building.png')
-medium_buildingResized = cv2.resize(medium_building, (5 * cell_size, 3 * cell_size))
-# small building
-smallBuilding = cv2.imread('images/small-building.png')
-smallBuilding_resized = cv2.resize(smallBuilding, (2 * cell_size, 2 * cell_size))
-# road
-roadColor = (128, 128, 128)
-# green lawn (rumput hijau)
-greenLawn = (92, 169, 4)
+# gambar jalan di grid
+draw_roads(grid, road_positions, cell_size, road_width)
 
+cv2.imshow("IKN Map", grid)
 
-
-# atur posisi bangunan di grid
-# atur untuk 1 big building di grid
-start_row_bigBuilding = random.randint(0, grid_size - 5) * cell_size
-start_col_bigBuilding = random.randint(0, grid_size - 10) * cell_size
-house_positions = []
-medium_buildingPosition = []
-small_buildingPosition = []
-road_position = []
-greenLawn_position = []
-
-for i in range(10):
-    # atur untuk 10 house
-    start_row_house = random.randint(0, grid_size - 2) * cell_size  # -2 karena rumah memiliki tinggi 2 sel
-    start_col_house = random.randint(0, grid_size - 1) * cell_size
-    house_positions.append((start_row_house, start_col_house))
-
-    # atur untuk 4 medium building
-    if i < 4:
-        startRow_mediumBuilding = random.randint(0, grid_size - 3) * cell_size
-        startCol_mediumBuilding = random.randint(0, grid_size - 5) * cell_size
-        medium_buildingPosition.append((startRow_mediumBuilding, startCol_mediumBuilding))
+while True:
     
-    # atur untuk 10 small building
-    startRow_smallBuilding = random.randint(0, grid_size - 2) * cell_size
-    startCol_smallBuilding = random.randint(0, grid_size - 2) * cell_size
-    small_buildingPosition.append((startRow_smallBuilding, startCol_smallBuilding))
+    key = cv2.waitKey(0)
 
-    # atur untuk road
-    startRow_road = 0 * cell_size
-    startCol_road = i * cell_size
-    road_position.append((startRow_road, startCol_road))
+    # Periksa jika tombol spasi ditekan
+    if key == 32:
+        # jika ditekan maka acak dan gambar ulang
+        randomize_and_redraw()
+    # q untuk keluar dari aplikasi
+    elif key == ord('q'):
+        break
 
-    # atur untuk green lawn (rumpu hijau)
-    startRow_greenLawn = 3 * cell_size
-    startCol_greenLawn = i * cell_size
-    greenLawn_position.append((startRow_greenLawn, startCol_greenLawn))
-
-
-# tempatkan lokasi di grid
-# tempatkan lokasi 1 big building
-grid[start_row_bigBuilding:start_row_bigBuilding + 5 * cell_size, start_col_bigBuilding:start_col_bigBuilding + 10 * cell_size] = bigBuilding_imgResized
-i = 0
-for start_row_house, start_col_house in house_positions:
-    # tempatkan lokasi 10 house
-    grid[start_row_house:start_row_house + 2 * cell_size, start_col_house:start_col_house + cell_size] = house_imgResized
-    # tempatkan lokasi 10 small building
-    grid[small_buildingPosition[i][0]:small_buildingPosition[i][0] + 2 * cell_size, small_buildingPosition[i][1]:small_buildingPosition[i][1] + 2 * cell_size] = smallBuilding_resized
-    
-    # tempatkan lokasi 4 medium building
-    if i < 4:
-        grid[medium_buildingPosition[i][0]:medium_buildingPosition[i][0] + 3 * cell_size, medium_buildingPosition[i][1]:medium_buildingPosition[i][1] + 5 * cell_size] = medium_buildingResized
-    
-    # tempatkan road didalam grid
-    grid[road_position[i][0]:road_position[i][0] + cell_size, road_position[i][1]:road_position[i][1] + 1 * cell_size] = roadColor
-
-    # tempatkan green lawn didalam grid
-    grid[greenLawn_position[i][0]:greenLawn_position[i][0] + cell_size, greenLawn_position[i][1]:greenLawn_position[i][1] + 1 * cell_size] = greenLawn
-
-    i = i + 1
-
-
-# =========================================================================================================================================
-# Tampilkan grid dengan ukuran jendela yang lebih besar
-cv2.imshow("Grid Map", grid)
-cv2.waitKey(0)
 cv2.destroyAllWindows()
