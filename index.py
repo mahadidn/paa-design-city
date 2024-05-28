@@ -29,7 +29,7 @@ def create_roads():
     road_positions = {'horizontal': [], 'vertical': []}
     
     # Lebar jalan
-    road_width = 4 * cell_size
+    road_width = 3 * cell_size
 
     # Membuat random jalan horizontal
     for i in range(random.randint(2, 5)):
@@ -68,6 +68,30 @@ def create_roads():
             turn_point = random.randint(20, grid_size - 20) * cell_size
         road_positions['vertical'][index] = (turn_col, 'turn', turn_point)
 
+    
+    
+    # pertigaan
+    pertigaan = random.choice(['horizontal', 'vertical'])
+    if pertigaan == 'horizontal':
+        index = random.randint(0, len(road_positions['horizontal']) - 1)
+        for item in road_positions['vertical']:
+            # print(item[1], "tes horizontal")
+            if item[1] != 'turn':
+                stop_row = road_positions['horizontal'][index][0]
+                stop_point = item[0]
+                road_positions['horizontal'][index] = (stop_row, 'stop', stop_point)
+                break
+    else:
+        index = random.randint(0, len(road_positions['vertical']) - 1)
+        for item in road_positions['horizontal']:
+            # print(item[1], "tes vertikal")
+            if  item[1] != 'turn':
+                stop_row = road_positions['vertical'][index][0]
+                stop_point = item[0]
+                road_positions['vertical'][index] = (stop_row, 'stop', stop_point)
+                break
+
+    # print(road_positions)
     return road_positions, road_width
 
 # gambar jalan di grid
@@ -78,7 +102,13 @@ def draw_roads(grid, road_positions, cell_size, road_width, right_way = True):
     # Gambar jalan horizontal
     for road in road_positions['horizontal']:
         # print(road)
-        if road[1] == 'turn':
+        if road[1] == 'stop':
+            stop_row, i, stop_point = road
+            # print(stop_point)
+            for col in range(0, grid_size * cell_size, cell_size):
+                grid[stop_row:stop_row + road_width, col:stop_point + cell_size] = road_color
+            
+        elif road[1] == 'turn':
             turn_row, i, turn_point = road
             for col in range(0, turn_point, cell_size):
                 grid[turn_row:turn_row + road_width, col:col + cell_size] = road_color
@@ -88,32 +118,20 @@ def draw_roads(grid, road_positions, cell_size, road_width, right_way = True):
             for row in range(turn_row, grid_size * cell_size, cell_size):
                 grid[row:row + cell_size, turn_point:turn_point + road_width] = road_color
         else:
-            # print(right_way)
-            row, i = road
-            if road_positions['vertical'][0][1] != 'turn' and road_positions['horizontal'][0][1] != 'turn' and right_way:
-                # print(road_positions['vertical'][0][1])
-                width = road_positions['vertical'][0][0]
-                # print(width)
-            else:
-                right_way = False
-                # print("ini di print")
-                # print(road_positions['vertical'][1][1])
-                
-                width = road_positions['vertical'][0][0]
             
+            row, i = road
             for col in range(0, grid_size * cell_size, cell_size):
-                if iterator <= width and right_way:
-                    grid[row:row + road_width, width:width + cell_size] = road_color
-                else:
-                    grid[row:row + road_width, col:col + cell_size] = road_color
-                # print(col)
-                iterator += 6
+                grid[row:row + road_width, col:col + cell_size] = road_color
 
     # Gambar jalan vertikal
     iterator = 0
     # w = 1
     for road in road_positions['vertical']:
-        if road[1] == 'turn':
+        if road[1] == 'stop':
+            stop_col, i, stop_point = road
+            for row in range(0, grid_size, cell_size):
+                grid[row:stop_point + cell_size, stop_col:stop_col + road_width] = road_color
+        elif road[1] == 'turn':
             turn_col, i, turn_point = road
             for row in range(0, turn_point, cell_size):
                 grid[row:row + cell_size, turn_col:turn_col + road_width] = road_color
@@ -124,20 +142,31 @@ def draw_roads(grid, road_positions, cell_size, road_width, right_way = True):
                 grid[turn_point:turn_point + road_width, col:col + cell_size] = road_color
         else:
             col, i = road
-            if road_positions['horizontal'][0][1] != 'turn' and road_positions['vertical'][0][1] != 'turn':
-                # print(road_positions['horizontal'][0][1])
-                width = road_positions['horizontal'][0][0]
-            else:
-                width = road_positions['horizontal'][1][0]
             for row in range(0, grid_size * cell_size, cell_size):
-                if iterator < width:
-                    grid[width:width + cell_size, col:col + road_width] = road_color
-                    right_way = False
-                else:
-                    grid[row:row + cell_size, col:col + road_width] = road_color
-                # print(col)
-                iterator += 6
-                # w += 1
+                grid[row:row + cell_size, col:col + road_width] = road_color
+
+    # Gambar jalan vertikal
+    iterator = 0
+    # w = 1
+    for road in road_positions['vertical']:
+        if road[1] == 'stop':
+            stop_col, i, stop_point = road
+            for row in range(0, grid_size, cell_size):
+                grid[row:stop_point + cell_size, stop_col:stop_col + road_width] = road_color
+        elif road[1] == 'turn':
+            turn_col, i, turn_point = road
+            for row in range(0, turn_point, cell_size):
+                grid[row:row + cell_size, turn_col:turn_col + road_width] = road_color
+            # Gambar bagian yang berbelok
+            for offset in range(road_width):
+                grid[turn_point:turn_point + road_width - offset, turn_col + offset:turn_col + road_width] = road_color
+            for col in range(turn_col, grid_size * cell_size, cell_size):
+                grid[turn_point:turn_point + road_width, col:col + cell_size] = road_color
+        else:
+            col, i = road
+            for row in range(0, grid_size * cell_size, cell_size):
+                grid[row:row + cell_size, col:col + road_width] = road_color
+
 
 # acak posisi jalan dan menggambar ulang grid
 def randomize_and_redraw():
