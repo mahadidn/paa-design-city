@@ -2,11 +2,10 @@ import numpy as np
 import cv2
 import random
 
-# inisialisasi ukuran grid, cell size, dan window size
+# Inisialisasi ukuran grid, cell size, dan window size
 gridSize = 150
 cellSize = 6
 windowSize = gridSize * cellSize
-
 
 def buatGrid():
     gridColor = (0, 100, 0)
@@ -22,81 +21,68 @@ def buatGrid():
     
     return grid
 
+# Periksa jarak antar jalan 
+def isSafe(posisiJalan, newPosition, posisi):
+    jarak = 15 * cellSize
+    if posisi == 'horizontal':
+        newRow = newPosition
+        for row, i in posisiJalan['horizontal']:
+            if abs(newRow - row) < jarak:
+                return False
+    elif posisi == 'vertical':
+        newCol = newPosition
+        for col, i in posisiJalan['vertical']:
+            if abs(newCol - col) < jarak:
+                return False
+    return True
 
-# acak posisi jalan
-def buatJalan():
+# Backtracking untuk cari posisi jalan
+def backtrack(posisiJalan, horizontalCount, verticalCount, roadWidth, attemp=0, maxAttemp=1000):
     
+    # untuk menghindari error memory stack, rekursif makin dalam
+    if attemp > maxAttemp:
+        return False
+
+    if horizontalCount == 0 and verticalCount == 0:
+        return True
+    
+    if horizontalCount > 0:
+        newRow = random.randint(0, gridSize - 1) * cellSize
+        if isSafe(posisiJalan, newRow, 'horizontal'):
+            posisiJalan['horizontal'].append((newRow, 'straight'))
+            if backtrack(posisiJalan, horizontalCount - 1, verticalCount, roadWidth, attemp + 1):
+                return True
+            posisiJalan['horizontal'].pop()
+
+    if verticalCount > 0:
+        newCol = random.randint(0, gridSize - 1) * cellSize
+        if isSafe(posisiJalan, newCol, 'vertical'):
+            posisiJalan['vertical'].append((newCol, 'straight'))
+            if backtrack(posisiJalan, horizontalCount, verticalCount - 1, roadWidth, attemp + 1):
+                return True
+            posisiJalan['vertical'].pop()
+
+    return False
+
+# Acak posisi jalan
+def buatJalan():
     posisiJalan = {'horizontal': [], 'vertical': []}
     
-    # ukuran jalan 1 cell
     roadWidth = 1 * cellSize
-    maks = 100
-
-    # Horizontal road
-    for i in range(random.randint(4, 7)):
-        startRow = random.randint(0, gridSize - 1) * cellSize
-        coba = 0
-        # 
-        while any(abs(startRow - row) < 15 * cellSize for row, * i in posisiJalan['horizontal']):
-            startRow = random.randint(0, gridSize - 1) * cellSize
-            coba += 1
-            if coba >= maks:
-                break
-        if coba < maks:
-            posisiJalan['horizontal'].append((startRow, 'straight'))
-
-    # Vertical road
-    for i in range(random.randint(3, 5)):
-        startCol = random.randint(0, gridSize - 1) * cellSize
-        coba = 0
-        # 
-        while any(abs(startCol - col) < 15 * cellSize for col, * i in posisiJalan['vertical']):
-            startCol = random.randint(0, gridSize - 1) * cellSize
-            coba += 1
-            if coba >= maks:
-                break
-        if coba < maks:
-            posisiJalan['vertical'].append((startCol, 'straight'))
-
-    # Jalan belokan
-    for i in range(random.randint(2, 3)):
-        turn = random.choice(['horizontal', 'vertical'])
-        if turn == 'horizontal' and posisiJalan['horizontal']:
-            index = random.randint(0, len(posisiJalan['horizontal']) - 1)
-            turnRow = posisiJalan['horizontal'][index][0]
-            turnPoint = random.randint(20, gridSize - 20) * cellSize
-            coba = 0
-            # 
-            while (any(abs(turnPoint - col) < 20 * cellSize for col, * i in posisiJalan['vertical']) or
-                   any(abs(turnPoint - otherTurn[2]) < 20 * cellSize for otherTurn in posisiJalan['horizontal'] if len(otherTurn) > 2)):
-                turnPoint = random.randint(20, gridSize - 20) * cellSize
-                coba += 1
-                if coba >= maks:
-                    break
-            if coba < maks:
-                posisiJalan['horizontal'][index] = (turnRow, 'turn', turnPoint)
-        elif turn == 'vertical' and posisiJalan['vertical']:
-            index = random.randint(0, len(posisiJalan['vertical']) - 1)
-            turnCol = posisiJalan['vertical'][index][0]
-            turnPoint = random.randint(20, gridSize - 20) * cellSize
-            coba = 0
-            # 
-            while (any(abs(turnPoint - row) < 20 * cellSize for row, * i in posisiJalan['horizontal']) or
-                   any(abs(turnPoint - otherTurn[2]) < 20 * cellSize for otherTurn in posisiJalan['vertical'] if len(otherTurn) > 2)):
-                turnPoint = random.randint(20, gridSize - 20) * cellSize
-                coba += 1
-                if coba >= maks:
-                    break
-            if coba < maks:
-                posisiJalan['vertical'][index] = (turnCol, 'turn', turnPoint)
-
+    horizontalCount = random.randint(4, 7)
+    verticalCount = random.randint(3, 5)
+    
+    while True:
+        if backtrack(posisiJalan, horizontalCount, verticalCount, roadWidth):
+            break
+    
     return posisiJalan, roadWidth
 
 # gambar jalan di grid
 def gambarJalan(grid, posisiJalan, cellSize, roadWidth):
     roadColor = (128, 128, 128)
     
-    # for dashed line (pembatas jalan)
+    # For dashed line (pembatas jalan)
     dashLineColor = (255, 255, 255)
     dashLength = 4  
     dashGap = 4     
@@ -125,7 +111,6 @@ def gambarJalan(grid, posisiJalan, cellSize, roadWidth):
                 grid[turnPoint:turnPoint + roadWidth, col:col + cellSize] = roadColor
         else:
             col, position = road
-            # print(road)
             for row in range(0, gridSize * cellSize, cellSize):
                 grid[row:row + cellSize, col:col + roadWidth] = roadColor
 
@@ -133,7 +118,6 @@ def gambarJalan(grid, posisiJalan, cellSize, roadWidth):
     for road in posisiJalan['horizontal']:
         if road[1] == 'turn':
             turnRow, pos, turnPoint = road
-            # print(road)
             centerY = turnRow + roadWidth // 2
             for col in range(0, turnPoint, dashLength + dashGap):
                 for i in range(dashLength):
@@ -143,11 +127,9 @@ def gambarJalan(grid, posisiJalan, cellSize, roadWidth):
             for row in range(turnRow, gridSize * cellSize, dashLength + dashGap):
                 for i in range(dashLength):
                     if row + i < gridSize * cellSize:
-                        # print(centerX)
                         grid[row + i:row + i + 1, centerX:centerX + 1] = dashLineColor
         else:
             row, pos = road
-            # print(road)
             centerY = row + roadWidth // 2
             for col in range(0, gridSize * cellSize, dashLength + dashGap):
                 for i in range(dashLength):
