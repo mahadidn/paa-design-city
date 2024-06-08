@@ -1,6 +1,9 @@
 import numpy as np
 import cv2
 import random
+import tkinter as tk
+from tkinter import ttk
+from PIL import Image, ImageTk
 
 # Inisialisasi ukuran grid, cell size, dan window size
 gridSize = 150
@@ -22,35 +25,46 @@ def buatGrid():
     return grid
 
 # Periksa jarak antar jalan 
-def isSafe(posisiJalan, newPosition, posisi):
-    jarak = 15 * cellSize
-    if posisi == 'horizontal':
-        newRow = newPosition
-        for row, i in posisiJalan['horizontal']:
-            if abs(newRow - row) < jarak:
+def isSafe(posisiJalan, posisi, arah, minJarak=15, minBelokanJarak=10):
+    if arah == 'horizontal':
+        for row, pos, *turn in posisiJalan['horizontal']:
+            if abs(posisi - row) < minJarak * cellSize:
                 return False
-    elif posisi == 'vertical':
-        newCol = newPosition
-        for col, i in posisiJalan['vertical']:
-            if abs(newCol - col) < jarak:
+        for row, pos, turnPoint in [x for x in posisiJalan['horizontal'] if len(x) == 3]:
+            if abs(turnPoint - posisi) < minBelokanJarak * cellSize:
+                return False
+        for col, pos, *turn in posisiJalan['vertical']:
+            if len(turn) == 1 and abs(turn[0] - posisi) < minBelokanJarak * cellSize:
+                return False
+    elif arah == 'vertical':
+        for col, pos, *turn in posisiJalan['vertical']:
+            if abs(posisi - col) < minJarak * cellSize:
+                return False
+        for col, pos, turnPoint in [x for x in posisiJalan['vertical'] if len(x) == 3]:
+            if abs(turnPoint - posisi) < minBelokanJarak * cellSize:
+                return False
+        for row, pos, *turn in posisiJalan['horizontal']:
+            if len(turn) == 1 and abs(turn[0] - posisi) < minBelokanJarak * cellSize:
                 return False
     return True
 
 # Backtracking untuk cari posisi jalan
-def backtrack(posisiJalan, horizontalCount, verticalCount, roadWidth, attemp=0, maxAttemp=1000):
+def backtrack(posisiJalan, horizontalCount, verticalCount, roadWidth, maxTurn, currentTurn = 0, attemp = 0):
     
     # untuk menghindari error memory stack, rekursif makin dalam
-    if attemp > maxAttemp:
+    if attemp > 1000:
         return False
 
     if horizontalCount == 0 and verticalCount == 0:
         return True
     
+    # untuk jalan tanpa belokan
     if horizontalCount > 0:
         newRow = random.randint(0, gridSize - 1) * cellSize
         if isSafe(posisiJalan, newRow, 'horizontal'):
             posisiJalan['horizontal'].append((newRow, 'straight'))
-            if backtrack(posisiJalan, horizontalCount - 1, verticalCount, roadWidth, attemp + 1):
+            if backtrack(posisiJalan, horizontalCount - 1, verticalCount, roadWidth, maxTurn, currentTurn, attemp + 1):
+                # print(currentTurn)
                 return True
             posisiJalan['horizontal'].pop()
 
@@ -58,9 +72,32 @@ def backtrack(posisiJalan, horizontalCount, verticalCount, roadWidth, attemp=0, 
         newCol = random.randint(0, gridSize - 1) * cellSize
         if isSafe(posisiJalan, newCol, 'vertical'):
             posisiJalan['vertical'].append((newCol, 'straight'))
-            if backtrack(posisiJalan, horizontalCount, verticalCount - 1, roadWidth, attemp + 1):
+            if backtrack(posisiJalan, horizontalCount, verticalCount - 1, roadWidth, maxTurn, currentTurn, attemp + 1):
                 return True
             posisiJalan['vertical'].pop()
+            
+    # untuk jalan berbelok
+    if currentTurn < maxTurn:
+        turn = random.choice(['horizontal', 'vertical'])
+        if turn == 'horizontal' and posisiJalan['horizontal']:
+            i = random.randint(0, len(posisiJalan['horizontal']) - 1)
+            turnRow = posisiJalan['horizontal'][i][0]
+            turnPoint = random.randint(10, gridSize - 10) * cellSize
+            # apakah jarak aman
+            if isSafe(posisiJalan, turnPoint, 'vertical', minJarak = 15, minBelokanJarak = 10):
+                posisiJalan['horizontal'][i] = (turnRow, 'turn', turnPoint)
+                if backtrack(posisiJalan, horizontalCount, verticalCount, roadWidth, maxTurn, currentTurn + 1, attemp + 1):
+                    return True
+                posisiJalan['horizontal'][i] = (turnRow, 'straight')
+        elif turn == 'vertical' and posisiJalan['vertical']:
+            i = random.randint(0, len(posisiJalan['vertical']) - 1)
+            turnCol = posisiJalan['vertical'][i][0]
+            turnPoint = random.randint(10, gridSize - 10) * cellSize
+            if isSafe(posisiJalan, turnPoint, 'horizontal', minJarak = 15, minBelokanJarak = 10):
+                posisiJalan['vertical'][i] = (turnCol, 'turn', turnPoint)
+                if backtrack(posisiJalan, horizontalCount, verticalCount, roadWidth, maxTurn, currentTurn + 1, attemp + 1):
+                    return True
+                posisiJalan['vertical'][i] = (turnCol, 'straight')
 
     return False
 
@@ -71,9 +108,10 @@ def buatJalan():
     roadWidth = 1 * cellSize
     horizontalCount = random.randint(4, 7)
     verticalCount = random.randint(3, 5)
+    maxTurn = random.randint(1, 3)
     
     while True:
-        if backtrack(posisiJalan, horizontalCount, verticalCount, roadWidth):
+        if backtrack(posisiJalan, horizontalCount, verticalCount, roadWidth, maxTurn):
             break
     
     return posisiJalan, roadWidth
@@ -172,41 +210,66 @@ def randomAndRedraw():
     
     # Gambar jalan di grid
     gambarJalan(grid, roadPosition, cellSize, roadWidth)
+    
+    # display GUI
+    displayGUI()
         
-    cv2.imshow("IKN Map", grid)
+
+# GUI dari tkinter
+def displayGUI():
+    global tk_image, scale
+    image = cv2.cvtColor(grid, cv2.COLOR_BGR2RGB)
+    image = Image.fromarray(image)
+    image = image.resize((int(image.width * scale), int(image.height * scale)), Image.Resampling.LANCZOS)
+    tk_image = ImageTk.PhotoImage(image)
+    canvas.create_image(0, 0, anchor="nw", image=tk_image)
+    canvas.config(scrollregion=canvas.bbox(tk.ALL))
+    
+
+def scrollLeft(event):
+    canvas.xview_scroll(-1, "units")
+
+def scrollRight(event):
+    canvas.xview_scroll(1, "units")
+
+def scrollUp(event):
+    canvas.yview_scroll(-1, "units")
+
+def scrollDown(event):
+    canvas.yview_scroll(1, "units")
 
 
-# Inisialisasi ukuran jendela tampilan
-windowSize = 900  
+root = tk.Tk()
+root.title("IKN Map")
 
-# jendela tampilan
-cv2.namedWindow("IKN Map")
+canvas = tk.Canvas(root, width=800, height=800, bg="white")
+canvas.pack(fill=tk.BOTH, expand=True)
 
-# Inisialisasi ukuran grid
-gridSize = 150
-cellSize = 6  # Ukuran setiap sel (6 pixel)
+scrollX = ttk.Scrollbar(root, orient="horizontal", command=canvas.xview)
+scrollY = ttk.Scrollbar(root, orient="vertical", command=canvas.yview)
+canvas.configure(xscrollcommand=scrollX.set, yscrollcommand=scrollY.set)
 
-# Menggambar grid awal
+scrollX.pack(side=tk.BOTTOM, fill=tk.X)
+scrollY.pack(side=tk.RIGHT, fill=tk.Y)
+
+canvas.bind("<Left>", scrollLeft)
+canvas.bind("<Right>", scrollRight)
+canvas.bind("<Up>", scrollUp)
+canvas.bind("<Down>", scrollDown)
+
+root.bind("<Left>", scrollLeft)
+root.bind("<Right>", scrollRight)
+root.bind("<Up>", scrollUp)
+root.bind("<Down>", scrollDown)
+
+redraw_button = tk.Button(root, text="Redesign Map", command=randomAndRedraw)
+redraw_button.pack()
+
 grid = buatGrid()
-
-# Atur posisi jalan (acak posisi dipanggil dan sekalian cek collision tiap jalan)
 roadPosition, roadWidth = buatJalan()
-
-# gambar jalan di grid
 gambarJalan(grid, roadPosition, cellSize, roadWidth)
 
-cv2.imshow("IKN Map", grid)
+scale = 1.0
+displayGUI()
 
-while True:
-    
-    key = cv2.waitKey(0)
-
-    # Periksa jika tombol spasi ditekan
-    if key == 32:
-        # jika ditekan maka acak dan gambar ulang
-        randomAndRedraw()
-    # q untuk keluar dari aplikasi
-    elif key == ord('q'):
-        break
-
-cv2.destroyAllWindows()
+root.mainloop()
