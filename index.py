@@ -5,10 +5,6 @@ import tkinter as tk
 from tkinter import ttk
 from PIL import Image, ImageTk
 
-# Inisialisasi ukuran grid, cell size, dan window size
-gridSize = 150
-cellSize = 6
-windowSize = gridSize * cellSize
 
 def buatGrid():
     gridColor = (0, 100, 0)
@@ -24,6 +20,7 @@ def buatGrid():
     
     return grid
 
+# untuk menempatkan jalan
 # Periksa jarak antar jalan 
 def isSafe(posisiJalan, posisi, arah, minJarak=15, minBelokanJarak=10):
     if arah == 'horizontal':
@@ -77,27 +74,26 @@ def backtrack(posisiJalan, horizontalCount, verticalCount, roadWidth, maxTurn, c
             posisiJalan['vertical'].pop()
             
     # untuk jalan berbelok
-    if currentTurn < maxTurn:
-        turn = random.choice(['horizontal', 'vertical'])
-        if turn == 'horizontal' and posisiJalan['horizontal']:
-            i = random.randint(0, len(posisiJalan['horizontal']) - 1)
-            turnRow = posisiJalan['horizontal'][i][0]
-            turnPoint = random.randint(10, gridSize - 10) * cellSize
-            # apakah jarak aman
-            if isSafe(posisiJalan, turnPoint, 'vertical', minJarak = 15, minBelokanJarak = 10):
-                posisiJalan['horizontal'][i] = (turnRow, 'turn', turnPoint)
-                if backtrack(posisiJalan, horizontalCount, verticalCount, roadWidth, maxTurn, currentTurn + 1, attemp + 1):
-                    return True
-                posisiJalan['horizontal'][i] = (turnRow, 'straight')
-        elif turn == 'vertical' and posisiJalan['vertical']:
-            i = random.randint(0, len(posisiJalan['vertical']) - 1)
-            turnCol = posisiJalan['vertical'][i][0]
-            turnPoint = random.randint(10, gridSize - 10) * cellSize
-            if isSafe(posisiJalan, turnPoint, 'horizontal', minJarak = 15, minBelokanJarak = 10):
-                posisiJalan['vertical'][i] = (turnCol, 'turn', turnPoint)
-                if backtrack(posisiJalan, horizontalCount, verticalCount, roadWidth, maxTurn, currentTurn + 1, attemp + 1):
-                    return True
-                posisiJalan['vertical'][i] = (turnCol, 'straight')
+    turn = random.choice(['horizontal', 'vertical'])
+    if turn == 'horizontal' and posisiJalan['horizontal']:
+        i = random.randint(0, len(posisiJalan['horizontal']) - 1)
+        turnRow = posisiJalan['horizontal'][i][0]
+        turnPoint = random.randint(10, gridSize - 10) * cellSize
+        # apakah jarak aman
+        if isSafe(posisiJalan, turnPoint, 'vertical', minJarak = 15, minBelokanJarak = 10):
+            posisiJalan['horizontal'][i] = (turnRow, 'turn', turnPoint)
+            if backtrack(posisiJalan, horizontalCount, verticalCount, roadWidth, maxTurn, currentTurn + 1, attemp + 1):
+                return True
+            posisiJalan['horizontal'][i] = (turnRow, 'straight')
+    elif turn == 'vertical' and posisiJalan['vertical']:
+        i = random.randint(0, len(posisiJalan['vertical']) - 1)
+        turnCol = posisiJalan['vertical'][i][0]
+        turnPoint = random.randint(10, gridSize - 10) * cellSize
+        if isSafe(posisiJalan, turnPoint, 'horizontal', minJarak = 15, minBelokanJarak = 10):
+            posisiJalan['vertical'][i] = (turnCol, 'turn', turnPoint)
+            if backtrack(posisiJalan, horizontalCount, verticalCount, roadWidth, maxTurn, currentTurn + 1, attemp + 1):
+                return True
+            posisiJalan['vertical'][i] = (turnCol, 'straight')
 
     return False
 
@@ -198,6 +194,136 @@ def gambarJalan(grid, posisiJalan, cellSize, roadWidth):
 
     return grid
 
+
+# untuk menempatkan bangunan
+def isValidPlace(x, y, width, height, placedPosition, roadCell):
+    for i in range(y, y + height, cellSize):
+        for j in range(x, x + width, cellSize):
+            if (i, j) in placedPosition or (i, j) in roadCell:
+                return False
+    return True
+
+def placeBuildingNearRoad(building, placedPosition, roadCell):
+    count = building['count']
+    width, height = building['size']
+    img = building['img']
+    attempt = 0
+    maxAttemp = 1000
+
+    for i in range(count):
+        placed = False
+        while not placed and attempt < maxAttemp:
+            roadType = random.choice(['horizontal', 'vertical'])
+            if roadType == 'horizontal' and roadPosition['horizontal']:
+                road = random.choice(roadPosition['horizontal'])
+                roadRow = road[0]
+                if road[1] == 'turn':
+                    y = roadRow + roadWidth
+                    x = road[2] + roadWidth
+                else:
+                    y = roadRow + roadWidth
+                    x = random.randint(0, gridSize - width) * cellSize
+                if x + width * cellSize <=windowSize and y + height * cellSize <=windowSize:
+                    if isValidPlace(x, y, width * cellSize, height * cellSize, placedPosition, roadCell):
+                        grid[y:y + height * cellSize, x:x + width * cellSize] = img
+                        for i in range(y, y + height * cellSize, cellSize):
+                            for j in range(x, x + width * cellSize, cellSize):
+                                placedPosition.add((i, j))
+                        placed = True
+            elif roadType == 'vertical' and roadPosition['vertical']:
+                road = random.choice(roadPosition['vertical'])
+                roadCol = road[0]
+                if road[1] == 'turn':
+                    x = roadCol + roadWidth
+                    y = road[2] + roadWidth
+                else:
+                    x = roadCol + roadWidth
+                    y = random.randint(0, gridSize - height) * cellSize
+                if x + width * cellSize <=windowSize and y + height * cellSize <=windowSize:
+                    if isValidPlace(x, y, width * cellSize, height * cellSize, placedPosition, roadCell):
+                        grid[y:y + height * cellSize, x:x + width * cellSize] = img
+                        for i in range(y, y + height * cellSize, cellSize):
+                            for j in range(x, x + width * cellSize, cellSize):
+                                placedPosition.add((i, j))
+                        placed = True
+            attempt += 1
+
+def buildingRandomPlace(building, placedPosition, roadCell):
+    width, height = building['size']
+    img = building['img']
+    attempt = 0
+    maxAttemp = 1000
+
+    placed = False
+    while not placed and attempt < maxAttemp:
+        x = random.randint(0, gridSize - width) * cellSize
+        y = random.randint(0, gridSize - height) * cellSize
+        if x + width * cellSize <=windowSize and y + height * cellSize <=windowSize:
+            if isValidPlace(x, y, width * cellSize, height * cellSize, placedPosition, roadCell):
+                grid[y:y + height * cellSize, x:x + width * cellSize] = img
+                for i in range(y, y + height * cellSize, cellSize):
+                    for j in range(x, x + width * cellSize, cellSize):
+                        placedPosition.add((i, j))
+                placed = True
+        attempt += 1
+
+def placeBuilding(grid, roadPosition, roadWidth):
+    buildings = {
+        'big_building': {'count': 1, 'size': (10, 5), 'img': big_building_img},
+        'medium_building': {'count': 4, 'size': (5, 3), 'img': medium_building_img},
+        'small_building': {'count': 16, 'size': (2, 2), 'img': small_building_img},
+        'house': {'count': 27, 'size': (1, 2), 'img': house_img},
+        'field': {'count': 1, 'size': (5, 10), 'img': lapangan_img},
+        'pool': {'count': 2, 'size': (10, 5), 'img': pool_img},
+    }
+
+    placedPosition = set()
+    roadCell = set()
+
+    for road in roadPosition['horizontal']:
+        row = road[0]
+        if road[1] == 'straight':
+            for col in range(0, gridSize * cellSize, cellSize):
+                for offset in range(roadWidth):
+                    roadCell.add((row + offset, col))
+        elif road[1] == 'turn':
+            turnPoint = road[2]
+            for col in range(0, turnPoint, cellSize):
+                for offset in range(roadWidth):
+                    roadCell.add((row + offset, col))
+            for offset in range(roadWidth):
+                for step in range(roadWidth - offset):
+                    roadCell.add((row + offset + step, turnPoint + offset))
+            for rowOffset in range(roadWidth):
+                for row in range(row + rowOffset, gridSize * cellSize, cellSize):
+                    for offset in range(roadWidth):
+                        roadCell.add((row, turnPoint + offset))
+
+    for road in roadPosition['vertical']:
+        col = road[0]
+        if road[1] == 'straight':
+            for row in range(0, gridSize * cellSize, cellSize):
+                for offset in range(roadWidth):
+                    roadCell.add((row, col + offset))
+        elif road[1] == 'turn':
+            turnPoint = road[2]
+            for row in range(0, turnPoint, cellSize):
+                for offset in range(roadWidth):
+                    roadCell.add((row, col + offset))
+            for offset in range(roadWidth):
+                for step in range(roadWidth - offset):
+                    roadCell.add((turnPoint + offset, col + offset + step))
+            for colOffset in range(roadWidth):
+                for col in range(col + colOffset, gridSize * cellSize, cellSize):
+                    for offset in range(roadWidth):
+                        roadCell.add((turnPoint + offset, col))
+
+    for buildingName, building in buildings.items():
+        if buildingName in ['field', 'pool']:
+            buildingRandomPlace(building, placedPosition, roadCell)
+        else:
+            placeBuildingNearRoad(building, placedPosition, roadCell)
+
 # acak posisi jalan dan menggambar ulang grid
 def randomAndRedraw():
     global grid, roadPosition, roadWidth
@@ -210,6 +336,9 @@ def randomAndRedraw():
     
     # Gambar jalan di grid
     gambarJalan(grid, roadPosition, cellSize, roadWidth)
+    
+    # tempatkan bangunan
+    placeBuilding(grid, roadPosition, roadWidth)
     
     # display GUI
     displayGUI()
@@ -238,19 +367,42 @@ def scrollUp(event):
 def scrollDown(event):
     canvas.yview_scroll(1, "units")
 
+# Inisialisasi ukuran grid, cell size, dan window size
+gridSize = 150
+cellSize = 6
+windowSize = gridSize * cellSize
+
+# Load building images
+big_building_img = cv2.imread('images/big-building.png')
+medium_building_img = cv2.imread('images/medium-building.png')
+small_building_img = cv2.imread('images/small-building.png')
+house_img = cv2.imread('images/house.png')
+lapangan_img = cv2.imread('images/lapangan.png')  # Load lapangan image
+pool_img = cv2.imread('images/kolam.png')
+
+def resizeImage(img, width, height):
+    return cv2.resize(img, (width * cellSize, height * cellSize))
+
+# Resize building images according to their sizes
+big_building_img = resizeImage(big_building_img, 10, 5)
+medium_building_img = resizeImage(medium_building_img, 5, 3)
+small_building_img = resizeImage(small_building_img, 2, 2)
+house_img = resizeImage(house_img, 1, 2)
+lapangan_img = resizeImage(lapangan_img, 5, 10)  # Resize lapangan image
+pool_img = resizeImage(pool_img, 10, 5)
 
 root = tk.Tk()
 root.title("IKN Map")
 
 canvas = tk.Canvas(root, width=800, height=800, bg="white")
-canvas.pack(fill=tk.BOTH, expand=True)
+canvas.grid(row=0, column=0, padx=0, pady=0)
 
 scrollX = ttk.Scrollbar(root, orient="horizontal", command=canvas.xview)
 scrollY = ttk.Scrollbar(root, orient="vertical", command=canvas.yview)
 canvas.configure(xscrollcommand=scrollX.set, yscrollcommand=scrollY.set)
+scrollX.grid(row=1, column=0, sticky="ew")
+scrollY.grid(row=0, column=1, sticky="ns")
 
-scrollX.pack(side=tk.BOTTOM, fill=tk.X)
-scrollY.pack(side=tk.RIGHT, fill=tk.Y)
 
 canvas.bind("<Left>", scrollLeft)
 canvas.bind("<Right>", scrollRight)
@@ -262,12 +414,15 @@ root.bind("<Right>", scrollRight)
 root.bind("<Up>", scrollUp)
 root.bind("<Down>", scrollDown)
 
-redraw_button = tk.Button(root, text="Redesign Map", command=randomAndRedraw)
-redraw_button.pack()
+redrawButton = tk.Button(root, text="Generate Map", command=randomAndRedraw)
+redrawButton.grid(row=15, column=0, padx=10, pady=10)
 
 grid = buatGrid()
 roadPosition, roadWidth = buatJalan()
 gambarJalan(grid, roadPosition, cellSize, roadWidth)
+
+# tempatkan bangunan
+placeBuilding(grid, roadPosition, roadWidth)
 
 scale = 1.0
 displayGUI()
