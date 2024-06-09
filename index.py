@@ -203,6 +203,7 @@ def isValidPlace(x, y, width, height, placedPosition, roadCell):
                 return False
     return True
 
+# prune search 
 def placeBuildingNearRoad(building, placedPosition, roadCell):
     count = building['count']
     width, height = building['size']
@@ -223,13 +224,20 @@ def placeBuildingNearRoad(building, placedPosition, roadCell):
                 else:
                     y = roadRow + roadWidth
                     x = random.randint(0, gridSize - width) * cellSize
-                if x + width * cellSize <=windowSize and y + height * cellSize <=windowSize:
-                    if isValidPlace(x, y, width * cellSize, height * cellSize, placedPosition, roadCell):
-                        grid[y:y + height * cellSize, x:x + width * cellSize] = img
-                        for i in range(y, y + height * cellSize, cellSize):
-                            for j in range(x, x + width * cellSize, cellSize):
-                                placedPosition.add((i, j))
-                        placed = True
+                
+                # Prune search, jika posisi tidak valid ga usah dijalanin bawahnya
+                if x + width * cellSize > windowSize or y + height * cellSize > windowSize:
+                    # print("tidak diperlukan horizontal ", x, " ", y)
+                    attempt += 1
+                    continue
+                
+                
+                if isValidPlace(x, y, width * cellSize, height * cellSize, placedPosition, roadCell):
+                    grid[y:y + height * cellSize, x:x + width * cellSize] = img
+                    for i in range(y, y + height * cellSize, cellSize):
+                        for j in range(x, x + width * cellSize, cellSize):
+                            placedPosition.add((i, j))
+                    placed = True
             elif roadType == 'vertical' and roadPosition['vertical']:
                 road = random.choice(roadPosition['vertical'])
                 roadCol = road[0]
@@ -239,13 +247,19 @@ def placeBuildingNearRoad(building, placedPosition, roadCell):
                 else:
                     x = roadCol + roadWidth
                     y = random.randint(0, gridSize - height) * cellSize
-                if x + width * cellSize <=windowSize and y + height * cellSize <=windowSize:
-                    if isValidPlace(x, y, width * cellSize, height * cellSize, placedPosition, roadCell):
-                        grid[y:y + height * cellSize, x:x + width * cellSize] = img
-                        for i in range(y, y + height * cellSize, cellSize):
-                            for j in range(x, x + width * cellSize, cellSize):
-                                placedPosition.add((i, j))
-                        placed = True
+                    
+                # Prune search, jika posisi tidak valid, continue
+                if x + width * cellSize > windowSize or y + height * cellSize > windowSize:
+                    # print("tidak diperlukan vertical ", x, " ", y)
+                    attempt += 1
+                    continue
+                
+                if isValidPlace(x, y, width * cellSize, height * cellSize, placedPosition, roadCell):
+                    grid[y:y + height * cellSize, x:x + width * cellSize] = img
+                    for i in range(y, y + height * cellSize, cellSize):
+                        for j in range(x, x + width * cellSize, cellSize):
+                            placedPosition.add((i, j))
+                    placed = True
             attempt += 1
 
 def buildingRandomPlace(building, placedPosition, roadCell):
