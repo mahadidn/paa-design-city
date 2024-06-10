@@ -11,12 +11,12 @@ def buatGrid():
     grid = np.ones((windowSize, windowSize, 3), dtype=np.uint8) * np.array(gridColor, dtype=np.uint8)
     
     # Gambar garis vertikal
-    for i in range(1, gridSize):
-        cv2.line(grid, (i * cellSize, 0), (i * cellSize, windowSize), (0, 0, 0), 1)
+    # for i in range(1, gridSize):
+    #     cv2.line(grid, (i * cellSize, 0), (i * cellSize, windowSize), (0, 0, 0), 1)
 
-    # Gambar garis horizontal
-    for j in range(1, gridSize):
-        cv2.line(grid, (0, j * cellSize), (windowSize, j * cellSize), (0, 0, 0), 1)
+    # # Gambar garis horizontal
+    # for j in range(1, gridSize):
+    #     cv2.line(grid, (0, j * cellSize), (windowSize, j * cellSize), (0, 0, 0), 1)
     
     return grid
 
@@ -304,8 +304,8 @@ def placeBuilding(grid, roadPosition, roadWidth):
         'medium_building': {'count': 4, 'size': (5, 3), 'img': medium_building_img},
         'small_building': {'count': 16, 'size': (2, 2), 'img': small_building_img},
         'house': {'count': 27, 'size': (1, 2), 'img': house_img},
-        'field': {'count': 1, 'size': (5, 10), 'img': lapangan_img},
-        'pool': {'count': 2, 'size': (10, 5), 'img': pool_img},
+        'field': {'count': 2, 'size': (5, 10), 'img': lapangan_img},
+        'pool': {'count': 1, 'size': (10, 5), 'img': pool_img},
         'pohon': {'count': 100, 'size': (1, 1), 'img': pohon_img},
     }
 
