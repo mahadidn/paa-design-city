@@ -101,7 +101,7 @@ def backtrack(posisiJalan, horizontalCount, verticalCount, roadWidth, maxTurn, c
 def buatJalan():
     posisiJalan = {'horizontal': [], 'vertical': []}
     
-    roadWidth = 1 * cellSize
+    roadWidth = 3 * cellSize
     horizontalCount = random.randint(4, 7)
     verticalCount = random.randint(3, 5)
     maxTurn = random.randint(1, 3)
@@ -118,9 +118,9 @@ def gambarJalan(grid, posisiJalan, cellSize, roadWidth):
     
     # For dashed line (pembatas jalan)
     dashLineColor = (255, 255, 255)
+    lineColor = (0, 0, 0)
     dashLength = 4  
     dashGap = 4     
-
     for road in posisiJalan['horizontal']:
         if road[1] == 'turn':
             turnRow, pos, turnPoint = road
@@ -156,19 +156,25 @@ def gambarJalan(grid, posisiJalan, cellSize, roadWidth):
             for col in range(0, turnPoint, dashLength + dashGap):
                 for i in range(dashLength):
                     if col + i < turnPoint:
-                        grid[centerY:centerY + 1, col + i:col + i + 1] = dashLineColor
+                        grid[centerY - (cellSize - 1):centerY - (cellSize - 2), col + i:col + i + 2] = dashLineColor
+                        grid[centerY:centerY + 1, col + i:col + i + 8] = lineColor
+                        grid[centerY + (cellSize - 2):centerY + (cellSize - 1), col + i:col + i + 2] = dashLineColor
             centerX = turnPoint + roadWidth // 2
             for row in range(turnRow, gridSize * cellSize, dashLength + dashGap):
                 for i in range(dashLength):
                     if row + i < gridSize * cellSize:
-                        grid[row + i:row + i + 1, centerX:centerX + 1] = dashLineColor
+                        grid[row + i:row + i + 1, centerX - (cellSize - 1):centerX - (cellSize - 2)] = dashLineColor
+                        grid[row + i:row + i + 8, centerX:centerX + 1] = lineColor
+                        grid[row + i:row + i + 1, centerX + (cellSize - 2):centerX + (cellSize - 1)] = dashLineColor
         else:
             row, pos = road
             centerY = row + roadWidth // 2
             for col in range(0, gridSize * cellSize, dashLength + dashGap):
                 for i in range(dashLength):
                     if col + i < gridSize * cellSize:
-                        grid[centerY:centerY + 1, col + i:col + i + 1] = dashLineColor
+                        grid[centerY - (cellSize - 1):centerY - (cellSize - 2), col + i:col + i + 2] = dashLineColor
+                        grid[centerY:centerY + 1, col + i:col + i + 8] = lineColor
+                        grid[centerY + (cellSize - 2):centerY + (cellSize - 1), col + i:col + i + 2] = dashLineColor
 
     # Buat garis putih putus-putus untuk jalan vertikal
     for road in posisiJalan['vertical']:
@@ -178,19 +184,25 @@ def gambarJalan(grid, posisiJalan, cellSize, roadWidth):
             for row in range(0, turnPoint, dashLength + dashGap):
                 for i in range(dashLength):
                     if row + i < turnPoint:
-                        grid[row + i:row + i + 1, centerX:centerX + 1] = dashLineColor
+                        grid[row + i:row + i + 1, centerX - (cellSize - 1):centerX - (cellSize - 2)] = dashLineColor
+                        grid[row + i:row + i + 8, centerX:centerX + 1] = lineColor
+                        grid[row + i:row + i + 1, centerX + (cellSize - 2):centerX + (cellSize - 1)] = dashLineColor
             centerY = turnPoint + roadWidth // 2
             for col in range(turnCol, gridSize * cellSize, dashLength + dashGap):
                 for i in range(dashLength):
                     if col + i < gridSize * cellSize:
-                        grid[centerY:centerY + 1, col + i:col + i + 1] = dashLineColor
+                        grid[centerY - (cellSize - 1):centerY - (cellSize - 2), col + i:col + i + 2] = dashLineColor
+                        grid[centerY:centerY + 1, col + i:col + i + 8] = lineColor
+                        grid[centerY + (cellSize - 2):centerY + (cellSize - 1), col + i:col + i + 2] = dashLineColor
         else:
             col, pos = road
             centerX = col + roadWidth // 2
             for row in range(0, gridSize * cellSize, dashLength + dashGap):
                 for i in range(dashLength):
                     if row + i < gridSize * cellSize:
-                        grid[row + i:row + i + 1, centerX:centerX + 1] = dashLineColor
+                        grid[row + i:row + i + 1, centerX - (cellSize - 1):centerX - (cellSize - 2)] = dashLineColor
+                        grid[row + i:row + i + 8, centerX:centerX + 1] = lineColor
+                        grid[row + i:row + i + 1, centerX + (cellSize - 2):centerX + (cellSize - 1)] = dashLineColor
 
     return grid
 
@@ -389,7 +401,7 @@ def scrollDown(event):
 
 # Inisialisasi ukuran grid, cell size, dan window size
 gridSize = 150
-cellSize = 6
+cellSize = 5
 windowSize = gridSize * cellSize
 
 # Load building images
