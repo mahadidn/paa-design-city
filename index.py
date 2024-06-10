@@ -265,21 +265,26 @@ def placeBuildingNearRoad(building, placedPosition, roadCell):
 def buildingRandomPlace(building, placedPosition, roadCell):
     width, height = building['size']
     img = building['img']
-    attempt = 0
+    count = building['count']
     maxAttemp = 1000
 
-    placed = False
-    while not placed and attempt < maxAttemp:
-        x = random.randint(0, gridSize - width) * cellSize
-        y = random.randint(0, gridSize - height) * cellSize
-        if x + width * cellSize <=windowSize and y + height * cellSize <=windowSize:
-            if isValidPlace(x, y, width * cellSize, height * cellSize, placedPosition, roadCell):
-                grid[y:y + height * cellSize, x:x + width * cellSize] = img
-                for i in range(y, y + height * cellSize, cellSize):
-                    for j in range(x, x + width * cellSize, cellSize):
-                        placedPosition.add((i, j))
-                placed = True
-        attempt += 1
+    
+    # print(building['count'])
+    for i in range(count):
+        attempt = 0
+        placed = False
+        # print("asd")
+        while not placed and attempt < maxAttemp:
+            x = random.randint(0, gridSize - width) * cellSize
+            y = random.randint(0, gridSize - height) * cellSize
+            if x + width * cellSize <=windowSize and y + height * cellSize <=windowSize:
+                if isValidPlace(x, y, width * cellSize, height * cellSize, placedPosition, roadCell):
+                    grid[y:y + height * cellSize, x:x + width * cellSize] = img
+                    for i in range(y, y + height * cellSize, cellSize):
+                        for j in range(x, x + width * cellSize, cellSize):
+                            placedPosition.add((i, j))
+                    placed = True
+            attempt += 1
 
 def placeBuilding(grid, roadPosition, roadWidth):
     buildings = {
@@ -289,6 +294,7 @@ def placeBuilding(grid, roadPosition, roadWidth):
         'house': {'count': 27, 'size': (1, 2), 'img': house_img},
         'field': {'count': 1, 'size': (5, 10), 'img': lapangan_img},
         'pool': {'count': 2, 'size': (10, 5), 'img': pool_img},
+        'pohon': {'count': 100, 'size': (1, 1), 'img': pohon_img},
     }
 
     placedPosition = set()
@@ -333,7 +339,7 @@ def placeBuilding(grid, roadPosition, roadWidth):
                         roadCell.add((turnPoint + offset, col))
 
     for buildingName, building in buildings.items():
-        if buildingName in ['field', 'pool']:
+        if buildingName in ['field', 'pool', 'pohon']:
             buildingRandomPlace(building, placedPosition, roadCell)
         else:
             placeBuildingNearRoad(building, placedPosition, roadCell)
@@ -393,6 +399,7 @@ small_building_img = cv2.imread('images/small-building.png')
 house_img = cv2.imread('images/house.png')
 lapangan_img = cv2.imread('images/lapangan.png')  # Load lapangan image
 pool_img = cv2.imread('images/kolam.png')
+pohon_img = cv2.imread('images/pohon.png')
 
 def resizeImage(img, width, height):
     return cv2.resize(img, (width * cellSize, height * cellSize))
@@ -404,6 +411,7 @@ small_building_img = resizeImage(small_building_img, 2, 2)
 house_img = resizeImage(house_img, 1, 2)
 lapangan_img = resizeImage(lapangan_img, 5, 10)  # Resize lapangan image
 pool_img = resizeImage(pool_img, 10, 5)
+pohon_img = resizeImage(pohon_img, 1, 1)
 
 root = tk.Tk()
 root.title("IKN Map")
