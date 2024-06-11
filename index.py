@@ -213,6 +213,9 @@ def isValidPlace(x, y, width, height, placedPosition, roadCell):
         for j in range(x, x + width, cellSize):
             if (i, j) in placedPosition or (i, j) in roadCell:
                 return False
+            else:
+                placedPosition.add((i, j))
+                
     return True
 
 # prune search 
@@ -246,9 +249,6 @@ def placeBuildingNearRoad(building, placedPosition, roadCell):
                 
                 if isValidPlace(x, y, width * cellSize, height * cellSize, placedPosition, roadCell):
                     grid[y:y + height * cellSize, x:x + width * cellSize] = img
-                    for i in range(y, y + height * cellSize, cellSize):
-                        for j in range(x, x + width * cellSize, cellSize):
-                            placedPosition.add((i, j))
                     placed = True
             elif roadType == 'vertical' and roadPosition['vertical']:
                 road = random.choice(roadPosition['vertical'])
@@ -268,9 +268,6 @@ def placeBuildingNearRoad(building, placedPosition, roadCell):
                 
                 if isValidPlace(x, y, width * cellSize, height * cellSize, placedPosition, roadCell):
                     grid[y:y + height * cellSize, x:x + width * cellSize] = img
-                    for i in range(y, y + height * cellSize, cellSize):
-                        for j in range(x, x + width * cellSize, cellSize):
-                            placedPosition.add((i, j))
                     placed = True
             attempt += 1
 
@@ -292,9 +289,6 @@ def buildingRandomPlace(building, placedPosition, roadCell):
             if x + width * cellSize <=windowSize and y + height * cellSize <=windowSize:
                 if isValidPlace(x, y, width * cellSize, height * cellSize, placedPosition, roadCell):
                     grid[y:y + height * cellSize, x:x + width * cellSize] = img
-                    for i in range(y, y + height * cellSize, cellSize):
-                        for j in range(x, x + width * cellSize, cellSize):
-                            placedPosition.add((i, j))
                     placed = True
             attempt += 1
 
