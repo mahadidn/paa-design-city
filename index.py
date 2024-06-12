@@ -46,59 +46,81 @@ def isSafe(posisiJalan, posisi, arah, minJarak=15, minBelokanJarak=10):
     return True
 
 # Backtracking untuk cari posisi jalan
-def backtrack(posisiJalan, horizontalCount, verticalCount, roadWidth, maxTurn, currentTurn = 0, attemp = 0):
+cobates = 1
+# Backtracking optimasi menggunakan memoization
+def backtrack(posisiJalan, horizontalCount, verticalCount, roadWidth, maxTurn, currentTurn=0, attempt=0, memo={}):
     
-    # untuk menghindari error memory stack, rekursif makin dalam
-    if attemp > 1000:
+    # print(attempt)
+    global cobates
+    print(cobates)
+    cobates += 1
+    
+    # To avoid memory stack error, limit recursion depth
+    if attempt > 100:
         return False
 
+    # Base case: if no more horizontal or vertical roads to place
     if horizontalCount == 0 and verticalCount == 0:
         return True
     
-    # untuk jalan tanpa belokan
+    # Create a memoization key based on current state
+    memo_key = (tuple(posisiJalan['horizontal']), tuple(posisiJalan['vertical']), horizontalCount, verticalCount, currentTurn)
+    if memo_key in memo:
+        print("memo key : ", memo_key)
+        return False
+
+    # Jalan Horizontal
     if horizontalCount > 0:
         newRow = random.randint(0, gridSize - 1) * cellSize
         if isSafe(posisiJalan, newRow, 'horizontal'):
             posisiJalan['horizontal'].append((newRow, 'straight'))
-            if backtrack(posisiJalan, horizontalCount - 1, verticalCount, roadWidth, maxTurn, currentTurn, attemp + 1):
-                # print(currentTurn)
+            if backtrack(posisiJalan, horizontalCount - 1, verticalCount, roadWidth, maxTurn, currentTurn, attempt + 1, memo):
+                memo[memo_key] = True
                 return True
             posisiJalan['horizontal'].pop()
 
+    # Jalan Vertikal
     if verticalCount > 0:
         newCol = random.randint(0, gridSize - 1) * cellSize
         if isSafe(posisiJalan, newCol, 'vertical'):
             posisiJalan['vertical'].append((newCol, 'straight'))
-            if backtrack(posisiJalan, horizontalCount, verticalCount - 1, roadWidth, maxTurn, currentTurn, attemp + 1):
+            if backtrack(posisiJalan, horizontalCount, verticalCount - 1, roadWidth, maxTurn, currentTurn, attempt + 1, memo):
+                memo[memo_key] = True
                 return True
             posisiJalan['vertical'].pop()
             
-    # untuk jalan berbelok
+    # Jalan belokan
     turn = random.choice(['horizontal', 'vertical'])
     if turn == 'horizontal' and posisiJalan['horizontal']:
         i = random.randint(0, len(posisiJalan['horizontal']) - 1)
         turnRow = posisiJalan['horizontal'][i][0]
         turnPoint = random.randint(10, gridSize - 10) * cellSize
-        # apakah jarak aman
-        if isSafe(posisiJalan, turnPoint, 'vertical', minJarak = 15, minBelokanJarak = 10):
+        if isSafe(posisiJalan, turnPoint, 'vertical', minJarak=15, minBelokanJarak=10):
             posisiJalan['horizontal'][i] = (turnRow, 'turn', turnPoint)
-            if backtrack(posisiJalan, horizontalCount, verticalCount, roadWidth, maxTurn, currentTurn + 1, attemp + 1):
+            if backtrack(posisiJalan, horizontalCount, verticalCount, roadWidth, maxTurn, currentTurn + 1, attempt + 1, memo):
+                memo[memo_key] = True
                 return True
             posisiJalan['horizontal'][i] = (turnRow, 'straight')
     elif turn == 'vertical' and posisiJalan['vertical']:
         i = random.randint(0, len(posisiJalan['vertical']) - 1)
         turnCol = posisiJalan['vertical'][i][0]
         turnPoint = random.randint(10, gridSize - 10) * cellSize
-        if isSafe(posisiJalan, turnPoint, 'horizontal', minJarak = 15, minBelokanJarak = 10):
+        if isSafe(posisiJalan, turnPoint, 'horizontal', minJarak=15, minBelokanJarak=10):
             posisiJalan['vertical'][i] = (turnCol, 'turn', turnPoint)
-            if backtrack(posisiJalan, horizontalCount, verticalCount, roadWidth, maxTurn, currentTurn + 1, attemp + 1):
+            if backtrack(posisiJalan, horizontalCount, verticalCount, roadWidth, maxTurn, currentTurn + 1, attempt + 1, memo):
+                memo[memo_key] = True
                 return True
             posisiJalan['vertical'][i] = (turnCol, 'straight')
 
+    memo[memo_key] = False
     return False
 
-# Acak posisi jalan
+# Modify buatJalan function to initialize memoization dictionary
 def buatJalan():
+    
+    global cobates
+    cobates = 0
+    
     posisiJalan = {'horizontal': [], 'vertical': []}
     
     roadWidth = 3 * cellSize
@@ -106,8 +128,9 @@ def buatJalan():
     verticalCount = random.randint(3, 5)
     maxTurn = random.randint(1, 3)
     
+    memo = {}
     while True:
-        if backtrack(posisiJalan, horizontalCount, verticalCount, roadWidth, maxTurn):
+        if backtrack(posisiJalan, horizontalCount, verticalCount, roadWidth, maxTurn, memo=memo):
             break
     
     return posisiJalan, roadWidth
@@ -234,7 +257,7 @@ def placeBuildingNearRoad(building, placedPosition, roadCell):
                 road = random.choice(roadPosition['horizontal'])
                 roadRow = road[0]
                 if road[1] == 'turn':
-                    y = roadRow + roadWidth
+                    y = roadRow + random.randint(0, gridSize - width) * cellSize
                     x = road[2] + roadWidth
                 else:
                     y = roadRow + roadWidth
@@ -254,7 +277,7 @@ def placeBuildingNearRoad(building, placedPosition, roadCell):
                 road = random.choice(roadPosition['vertical'])
                 roadCol = road[0]
                 if road[1] == 'turn':
-                    x = roadCol + roadWidth
+                    x = roadCol + random.randint(0, gridSize - height) * cellSize
                     y = road[2] + roadWidth
                 else:
                     x = roadCol + roadWidth
