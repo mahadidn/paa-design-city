@@ -72,9 +72,12 @@ def backtrack(posisiJalan, horizontalCount, verticalCount, roadWidth, maxTurn, c
             posisiJalan['horizontal'].append((newRow, 'straight'))
             if backtrack(posisiJalan, horizontalCount - 1, verticalCount, roadWidth, maxTurn, currentTurn, attempt + 1, memo):
                 memo[memo_key] = True
+            if backtrack(posisiJalan, horizontalCount - 1, verticalCount, roadWidth, maxTurn, currentTurn, attempt + 1, memo):
+                memo[memo_key] = True
                 return True
             posisiJalan['horizontal'].pop()
 
+    # Jalan Vertikal
     # Jalan Vertikal
     if verticalCount > 0:
         newCol = random.randint(0, gridSize - 1) * cellSize
@@ -82,9 +85,12 @@ def backtrack(posisiJalan, horizontalCount, verticalCount, roadWidth, maxTurn, c
             posisiJalan['vertical'].append((newCol, 'straight'))
             if backtrack(posisiJalan, horizontalCount, verticalCount - 1, roadWidth, maxTurn, currentTurn, attempt + 1, memo):
                 memo[memo_key] = True
+            if backtrack(posisiJalan, horizontalCount, verticalCount - 1, roadWidth, maxTurn, currentTurn, attempt + 1, memo):
+                memo[memo_key] = True
                 return True
             posisiJalan['vertical'].pop()
             
+    # Jalan belokan
     # Jalan belokan
     turn = random.choice(['horizontal', 'vertical'])
     if turn == 'horizontal' and posisiJalan['horizontal']:
@@ -92,7 +98,10 @@ def backtrack(posisiJalan, horizontalCount, verticalCount, roadWidth, maxTurn, c
         turnRow = posisiJalan['horizontal'][i][0]
         turnPoint = random.randint(10, gridSize - 10) * cellSize
         if isSafe(posisiJalan, turnPoint, 'vertical', minJarak=15, minBelokanJarak=10):
+        if isSafe(posisiJalan, turnPoint, 'vertical', minJarak=15, minBelokanJarak=10):
             posisiJalan['horizontal'][i] = (turnRow, 'turn', turnPoint)
+            if backtrack(posisiJalan, horizontalCount, verticalCount, roadWidth, maxTurn, currentTurn + 1, attempt + 1, memo):
+                memo[memo_key] = True
             if backtrack(posisiJalan, horizontalCount, verticalCount, roadWidth, maxTurn, currentTurn + 1, attempt + 1, memo):
                 memo[memo_key] = True
                 return True
@@ -102,17 +111,26 @@ def backtrack(posisiJalan, horizontalCount, verticalCount, roadWidth, maxTurn, c
         turnCol = posisiJalan['vertical'][i][0]
         turnPoint = random.randint(10, gridSize - 10) * cellSize
         if isSafe(posisiJalan, turnPoint, 'horizontal', minJarak=15, minBelokanJarak=10):
+        if isSafe(posisiJalan, turnPoint, 'horizontal', minJarak=15, minBelokanJarak=10):
             posisiJalan['vertical'][i] = (turnCol, 'turn', turnPoint)
+            if backtrack(posisiJalan, horizontalCount, verticalCount, roadWidth, maxTurn, currentTurn + 1, attempt + 1, memo):
+                memo[memo_key] = True
             if backtrack(posisiJalan, horizontalCount, verticalCount, roadWidth, maxTurn, currentTurn + 1, attempt + 1, memo):
                 memo[memo_key] = True
                 return True
             posisiJalan['vertical'][i] = (turnCol, 'straight')
 
     memo[memo_key] = False
+    memo[memo_key] = False
     return False
 
 # Modify buatJalan function to initialize memoization dictionary
+# Modify buatJalan function to initialize memoization dictionary
 def buatJalan():
+    
+    global cobates
+    cobates = 0
+    
     
     global cobates
     cobates = 0
@@ -125,7 +143,9 @@ def buatJalan():
     maxTurn = random.randint(1, 3)
     
     memo = {}
+    memo = {}
     while True:
+        if backtrack(posisiJalan, horizontalCount, verticalCount, roadWidth, maxTurn, memo=memo):
         if backtrack(posisiJalan, horizontalCount, verticalCount, roadWidth, maxTurn, memo=memo):
             break
     
@@ -254,6 +274,7 @@ def placeBuildingNearRoad(building, placedPosition, roadCell):
                 roadRow = road[0]
                 if road[1] == 'turn':
                     y = roadRow + random.randint(0, gridSize - width) * cellSize
+                    y = roadRow + random.randint(0, gridSize - width) * cellSize
                     x = road[2] + roadWidth
                 else:
                     y = roadRow + roadWidth
@@ -273,6 +294,7 @@ def placeBuildingNearRoad(building, placedPosition, roadCell):
                 road = random.choice(roadPosition['vertical'])
                 roadCol = road[0]
                 if road[1] == 'turn':
+                    x = roadCol + random.randint(0, gridSize - height) * cellSize
                     x = roadCol + random.randint(0, gridSize - height) * cellSize
                     y = road[2] + roadWidth
                 else:
