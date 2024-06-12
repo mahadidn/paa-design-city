@@ -50,11 +50,6 @@ cobates = 1
 # Backtracking optimasi menggunakan memoization
 def backtrack(posisiJalan, horizontalCount, verticalCount, roadWidth, maxTurn, currentTurn=0, attempt=0, memo={}):
     
-    # print(attempt)
-    global cobates
-    print(cobates)
-    cobates += 1
-    
     # Untuk menghindari rekursif mendalam
     if attempt > 100:
         return False
@@ -65,9 +60,10 @@ def backtrack(posisiJalan, horizontalCount, verticalCount, roadWidth, maxTurn, c
     
     # Buat memoization key dengan state saat ini
     memo_key = (tuple(posisiJalan['horizontal']), tuple(posisiJalan['vertical']), horizontalCount, verticalCount, currentTurn)
+    
+    # jika sudah terusu true return posisinya
     if memo_key in memo:
-        print("memo key : ", memo_key)
-        return False
+        return memo
 
     # Jalan Horizontal
     if horizontalCount > 0:
