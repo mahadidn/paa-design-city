@@ -48,43 +48,53 @@ def isSafe(posisiJalan, posisi, arah, minJarak=15, minBelokanJarak=10):
 
 # Backtracking untuk cari posisi jalan
 cobates = 1
-# Backtracking optimasi menggunakan memoization
-def backtrack(posisiJalan, horizontalCount, verticalCount, roadWidth, maxTurn, currentTurn=0, attempt=0, memo={}):
+# Backtracking optimasi menggunakan dyamic programming
+dynamic_programming = {'horizontal': [], 'vertical': []}
+def backtrack(posisiJalan, horizontalCount, verticalCount, roadWidth, maxTurn, currentTurn=0, attempt=0):
     
     # Untuk menghindari rekursif mendalam
-    if attempt > 100:
-        return False
+    # if attempt > 100:
+    #     return False
 
     # Jika horizontal dan vertikal = 0
     if horizontalCount == 0 and verticalCount == 0:
         return True
     
-    # Buat memoization key dengan state saat ini
-    memo_key = (tuple(posisiJalan['horizontal']), tuple(posisiJalan['vertical']), horizontalCount, verticalCount, currentTurn)
+    # buat dynamic programming
+    global dynamic_programming
     
-    # jika sudah terusu true return posisinya
-    if memo_key in memo:
-        return memo
-
     # Jalan Horizontal
     if horizontalCount > 0:
         newRow = random.randint(0, gridSize - 1) * cellSize
-        if isSafe(posisiJalan, newRow, 'horizontal'):
-            posisiJalan['horizontal'].append((newRow, 'straight'))
-            if backtrack(posisiJalan, horizontalCount - 1, verticalCount, roadWidth, maxTurn, currentTurn, attempt + 1, memo):
-                memo[memo_key] = True
-                return True
-            posisiJalan['horizontal'].pop()
+        if newRow in dynamic_programming['horizontal']:
+            # print(newRow, "in ", dynamic_programming)
+            dynamic_programming['horizontal'] = []
+            return False
+        else:
+            if isSafe(posisiJalan, newRow, 'horizontal'):
+                posisiJalan['horizontal'].append((newRow, 'straight'))
+                if backtrack(posisiJalan, horizontalCount - 1, verticalCount, roadWidth, maxTurn, currentTurn, attempt + 1):
+                    return True
+                posisiJalan['horizontal'].pop()
+            else:
+                dynamic_programming['horizontal'].append(newRow)
+                
 
     # Jalan Vertikal
     if verticalCount > 0:
         newCol = random.randint(0, gridSize - 1) * cellSize
-        if isSafe(posisiJalan, newCol, 'vertical'):
-            posisiJalan['vertical'].append((newCol, 'straight'))
-            if backtrack(posisiJalan, horizontalCount, verticalCount - 1, roadWidth, maxTurn, currentTurn, attempt + 1, memo):
-                memo[memo_key] = True
-                return True
-            posisiJalan['vertical'].pop()
+        if newCol in dynamic_programming['vertical']:
+            # print(newCol, "in ", dynamic_programming['vertical'])
+            dynamic_programming['vertical'] = []
+            return False
+        else:
+            if isSafe(posisiJalan, newCol, 'vertical'):
+                posisiJalan['vertical'].append((newCol, 'straight'))
+                if backtrack(posisiJalan, horizontalCount, verticalCount - 1, roadWidth, maxTurn, currentTurn, attempt + 1):
+                    return True
+                posisiJalan['vertical'].pop()
+            else:
+                dynamic_programming['vertical'].append(newCol)
             
     # Jalan belokan
     turn = random.choice(['horizontal', 'vertical'])
@@ -94,8 +104,7 @@ def backtrack(posisiJalan, horizontalCount, verticalCount, roadWidth, maxTurn, c
         turnPoint = random.randint(10, gridSize - 10) * cellSize
         if isSafe(posisiJalan, turnPoint, 'vertical', minJarak=15, minBelokanJarak=10):
             posisiJalan['horizontal'][i] = (turnRow, 'turn', turnPoint)
-            if backtrack(posisiJalan, horizontalCount, verticalCount, roadWidth, maxTurn, currentTurn + 1, attempt + 1, memo):
-                memo[memo_key] = True
+            if backtrack(posisiJalan, horizontalCount, verticalCount, roadWidth, maxTurn, currentTurn + 1, attempt + 1):
                 return True
             posisiJalan['horizontal'][i] = (turnRow, 'straight')
     elif turn == 'vertical' and posisiJalan['vertical']:
@@ -104,34 +113,31 @@ def backtrack(posisiJalan, horizontalCount, verticalCount, roadWidth, maxTurn, c
         turnPoint = random.randint(10, gridSize - 10) * cellSize
         if isSafe(posisiJalan, turnPoint, 'horizontal', minJarak=15, minBelokanJarak=10):
             posisiJalan['vertical'][i] = (turnCol, 'turn', turnPoint)
-            if backtrack(posisiJalan, horizontalCount, verticalCount, roadWidth, maxTurn, currentTurn + 1, attempt + 1, memo):
-                memo[memo_key] = True
+            if backtrack(posisiJalan, horizontalCount, verticalCount, roadWidth, maxTurn, currentTurn + 1, attempt + 1):
                 return True
             posisiJalan['vertical'][i] = (turnCol, 'straight')
 
-    memo[memo_key] = False
     return False
 
-# Modify buatJalan function to initialize memoization dictionary
 
 cobates = 0
 def buatJalan():
     
-    
-    
     global cobates
     cobates = 0
     
+    global dynamic_programming
+    
     posisiJalan = {'horizontal': [], 'vertical': []}
+    dynamic_programming = {'horizontal': [], 'vertical': []}
     
     roadWidth = 3 * cellSize
     horizontalCount = random.randint(4, 7)
     verticalCount = random.randint(3, 5)
     maxTurn = random.randint(1, 3)
     
-    memo = {}
     while True:
-        if backtrack(posisiJalan, horizontalCount, verticalCount, roadWidth, maxTurn, memo=memo):
+        if backtrack(posisiJalan, horizontalCount, verticalCount, roadWidth, maxTurn):
             break
     
     return posisiJalan, roadWidth
@@ -322,7 +328,7 @@ def placeBuilding(grid, roadPosition, roadWidth):
     buildings = {
         'big_building': {'count': 1, 'size': (10, 5), 'img': big_building_img},
         'medium_building': {'count': 4, 'size': (5, 3), 'img': medium_building_img},
-        'small_buil5ding': {'count': 16, 'size': (2, 2), 'img': small_building_img},
+        'small_building': {'count': 16, 'size': (2, 2), 'img': small_building_img},
         'house': {'count': 27, 'size': (1, 2), 'img': house_img},
         'field': {'count': 2, 'size': (5, 10), 'img': lapangan_img},
         'pool': {'count': 1, 'size': (10, 5), 'img': pool_img},
@@ -380,8 +386,7 @@ def placeBuilding(grid, roadPosition, roadWidth):
 rata = []
 def randomAndRedraw():
     
-    starrtime = time.time()
-    
+    starttime = time.time()
     global grid, roadPosition, roadWidth, rata
     
     # Gambar grid
@@ -396,15 +401,14 @@ def randomAndRedraw():
     # tempatkan bangunan
     placeBuilding(grid, roadPosition, roadWidth)
     endtime = time.time()
+    rata.append((endtime - starttime))
     
-    rata.append((endtime - starrtime))
-    
-    print("time: ", endtime - starrtime)
+    print("time: ", endtime - starttime)
     
     if len(rata) > 10:
         print("rata-rata = ", (sum(rata) / len(rata)))
         rata = []
-    
+        
     # display GUI
     displayGUI()
         
